@@ -11,6 +11,7 @@ MODULE_LICENSE("Dual BSD/GPL");
 
 int fifo_buffer[16];
 int pos = 0;
+int secondPass = 1;
 
 dev_t dev_id;
 static struct class *dev_class;
@@ -88,19 +89,24 @@ int file_close(struct inode *pinode, struct file *pfile){
 }
 
 ssize_t fifo_read(struct file *pfile, char __user *buffer, size_t length, loff_t *offset){
-  char output[80];
+  char output[6];
   long int len = 0;
+  int ret;
   int i;
+  secondPass = !secondPass;
+  if (secondPass == 1) return 0;
 
+  if(pos == 0)
+    printk(KERN_WARNING "Fifo empty!\n");
   if (wait_event_interruptible(readQueue,(pos>0)))     // Postavi u queue ako nema sta procitati
     return -ERESTARTSYS;
 
-  if(pos == 0){
-    printk(KERN_WARNING "Fifo empty!\n");
-  }else{
+  if(pos > 0){
     pos--;
-    len = scnprintf(output, strlen(output), "%#04x", fifo_buffer[0]);  // Uvek cita prvi elemenat kao najstariji
-    if (copy_to_user(buffer, output, len))
+    len = snprintf(output, 6, "%#04x\n", fifo_buffer[0]);  // Uvek cita prvi elemenat kao najstariji
+    //printk(KERN_INFO "To read:%s|Of length:X", output);
+    ret = copy_to_user(buffer, output, len);
+    if (ret)
       return -EFAULT;
     for(i=0;i<15;i++){                                // Pomeramo niz ulevo u stilu fifo buffera, na desne pozicije simbolicno pisemo -1
       fifo_buffer[i]=fifo_buffer[i+1];
@@ -110,7 +116,7 @@ ssize_t fifo_read(struct file *pfile, char __user *buffer, size_t length, loff_t
   }
 
   wake_up_interruptible(&writeQueue); // Budimo eventualne procese za upis, mesto oslobodjeno
-	return 0;
+	return len;
 }
 
 ssize_t fifo_write(struct file *pfile, const char __user *buffer, size_t length, loff_t *offset){
@@ -119,6 +125,7 @@ ssize_t fifo_write(struct file *pfile, const char __user *buffer, size_t length,
   char trimmed[4];
   int toBuffer;
   int finished = 0;
+  int i;
   if (copy_from_user(input,buffer,length)){
     return -EFAULT;
   }
@@ -126,20 +133,26 @@ ssize_t fifo_write(struct file *pfile, const char __user *buffer, size_t length,
 
   input[length-1] = '\0'; // Terminirati da bi funkcije ispod uspesno radile
 
-  if ((input[4] != '\0') && (input[4] != ';'))              // U slucaju da je posle hex broja dodat nedozvoljen karakter
-    printk(KERN_ERR "Expected format: 0x??;0x??;0x??..(16) of max value 0xFF");
+  if ((input[4] != '\0') && (input[4] != ';')){              // U slucaju da je posle hex broja dodat nedozvoljen karakter
+    printk(KERN_ERR "Expected format: 0x??;0x??;0x??..(16) of max value 0xFF (1)");
+    return length;
+  }
   while(1){
-    strncpy(trimmed, input, 4);                    //Uzimamo 4 karaktera (0x??)
-    if (kstrtoint(trimmed, 0, &toBuffer) != 0){
-      printk(KERN_ERR "Expected format: 0x??;0x??;0x??..(16) of max value 0xFF");   //U slucaju da ta cetiri karaktera nisu hex broj
+    for(i=0;i<4;i++){
+      trimmed[i] = input[i];
     }
-
+    trimmed[4] = '\0';
+    //strncpy(trimmed, input, 2);                    //Uzimamo 4 karaktera (0x??)
+    if (kstrtoint(trimmed, 0, &toBuffer) != 0){
+      printk(KERN_ERR "%s received. Expected format: 0x??;0x??;0x??..(16) of max value 0xFF (2)", trimmed);   //U slucaju da ta cetiri karaktera nisu hex broj
+      return length;
+    }
+    if(pos > 15)
+      printk(KERN_WARNING "Fifo full\n");
     if (wait_event_interruptible(writeQueue,(pos<16)))    // Postavi u queue ako je fifo pun
       return -ERESTARTSYS;
 
-    if(pos > 15){
-      printk(KERN_WARNING "Fifo full\n");
-    }else{
+    if(pos < 16){
       fifo_buffer[pos] = toBuffer;
       pos++;                                                 //pos zapravo oznacava broj elemenata i poziciju poslednjeg
       printk(KERN_INFO "Wrote %d into fifo", toBuffer);
