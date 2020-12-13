@@ -173,7 +173,6 @@ ssize_t fifo_write(struct file *pfile, const char __user *buffer, size_t length,
                                                                                                         * potrebno je prebrojati broj ";" delimitera pa je predvidjeni broj za upis jednak broj delimitera+1, sto bi se trebalo proveriti pre while-a
                                                                                                         * i na tom mestu odraditi proveru za waitQueue. Takodje semafor spustati/podizati van while-a a ne unutar u tom slucaju
                                                                                                         */
-  printk(KERN_WARNING "Received:%s",inputCopy);
   while(1){
     strncpy(trimmed, inputCopy, 4);                                                                       // Uzimamo 4 karaktera (0x??)
     trimmed[4] = '\0';

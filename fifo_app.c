@@ -18,6 +18,10 @@ int main(){
     printf("\t3: Izadji\n");
     printf("#:");
     scanf("%d", &choice);
+    num = 0;
+    input[0] = 0;
+    len = 0;
+    prev_len = 0;
 
     switch (choice) {
     case 1: {
@@ -39,17 +43,22 @@ int main(){
           }
         }while(strcmp(input, "Q") != 0);
         printf("Niz za upis: %s\n", buffer);
+
         fifo = fopen("/dev/fifo", "w");
         fwrite(buffer, 1, prev_len+len, fifo);
         //fputs(buffer, fifo);
         fflush(fifo);
+        fclose(fifo);
+
+        //system(echo "")
         printf("Vrednosti upisane!\n\n");
+
 
         break;
     }
     case 2: {
-        printf("Citam...\n");
-
+        printf("Koliko brojeva zelite procitati iz fifo-a?\n");
+        scanf("%d", &num);
         break;
     }
     case 3: {
