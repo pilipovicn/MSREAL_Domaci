@@ -5,3 +5,4 @@
 *.ko
 *.symvers
 *.order
+*.out

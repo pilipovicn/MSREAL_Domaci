@@ -101,20 +101,20 @@ ssize_t fifo_read(struct file *pfile, char __user *buffer, size_t length, loff_t
   int i;
   int j;
   output[0] = '\0';
-  //secondPass = !secondPass;                                                                           //Kako  sistem ocekuje povratnu vrednost u vidu broja bajtova za ispisati
-                                                                                                        //Ispis ne radi za return 0, tako da ovime dozvoljavamo prvi ispis, ali na drugi
+  //secondPass = !secondPass;                                                                           // Kako  sistem ocekuje povratnu vrednost u vidu broja bajtova za ispisati
+                                                                                                        // Ispis ne radi za return 0, tako da ovime dozvoljavamo prvi ispis, ali na drugi
                                                                                                         // zahtev od cat vracamo 0
                                                                                                         // Ovo ima smisla staviti unutar kriticne sekcije, u slucaju vise simultanih cat-ova, pa je to ispod i uradjeno
   //if (secondPass == 1) return 0;
 
-  if(down_interruptible(&sem))                                                                          //spusatmo semafor zbog provere pos
+  if(down_interruptible(&sem))                                                                          // spusatmo semafor zbog provere pos
     return -ERESTARTSYS;
   while(pos < batch){
-    up(&sem);                                                                                           //dizemo semafor da bi drugi proces mogao probuditi trenutni iz readQueue
+    up(&sem);                                                                                           // dizemo semafor da bi drugi proces mogao probuditi trenutni iz readQueue
     printk(KERN_WARNING "Fifo empty or not enough elements for a full batch! On hold...\n");
     if(wait_event_interruptible(readQueue,(pos>(batch-1))))                                             // Postavi u queue ako nema sta procitati
       return -ERESTARTSYS;
-    if(down_interruptible(&sem))                                                                        //kada se dobije novi elemenat, spustamo semafor i nastavljamo dalje, ako ne,
+    if(down_interruptible(&sem))                                                                        // kada se dobije novi elemenat, spustamo semafor i nastavljamo dalje, ako ne,
       return -ERESTARTSYS;                                                                              // oznaci kao task_interruptible i cekaj a) svoj red na semafor, b) ispunjen uslov pos>=batch
   }
   secondPass = !secondPass;                                                                             // Objasnjeno iznad
@@ -155,7 +155,7 @@ ssize_t fifo_write(struct file *pfile, const char __user *buffer, size_t length,
   inputCopy = input;                                                                                     // strsep ocekuje char**
 
 
-  strncpy(trimmed, inputCopy, 4);                                                                        //Uzimamo 4 karaktera (potencijalno num=)
+  strncpy(trimmed, inputCopy, 4);                                                                        // Uzimamo 4 karaktera (potencijalno num=)
   trimmed[4] = '\0';
   if ((inputCopy[4] != '\0') && (inputCopy[4] != ';') && (strncmp(trimmed, "num=", 4)!=0)){              // U slucaju da je posle hex broja dodat nedozvoljen karakter
     printk(KERN_ERR "Expected format: 0x??;0x??;0x??..(16) of max value 0xFF (1)");
@@ -173,12 +173,12 @@ ssize_t fifo_write(struct file *pfile, const char __user *buffer, size_t length,
                                                                                                         * potrebno je prebrojati broj ";" delimitera pa je predvidjeni broj za upis jednak broj delimitera+1, sto bi se trebalo proveriti pre while-a
                                                                                                         * i na tom mestu odraditi proveru za waitQueue. Takodje semafor spustati/podizati van while-a a ne unutar u tom slucaju
                                                                                                         */
+  printk(KERN_WARNING "Received:%s",inputCopy);
   while(1){
-    printk(KERN_WARNING "Position:%d",pos);
-    strncpy(trimmed, inputCopy, 4);                                                                       //Uzimamo 4 karaktera (0x??)
+    strncpy(trimmed, inputCopy, 4);                                                                       // Uzimamo 4 karaktera (0x??)
     trimmed[4] = '\0';
     if (kstrtoint(trimmed, 0, &toBuffer) != 0){
-      printk(KERN_ERR "%s received. Expected format: 0x??;0x??;0x??..(16) of max value 0xFF (2)", trimmed); //U slucaju da ta cetiri karaktera nisu hex broj
+      printk(KERN_ERR "%s received. Expected format: 0x??;0x??;0x??..(16) of max value 0xFF (2)", trimmed); // U slucaju da ta cetiri karaktera nisu hex broj
       return length;
     } else if (toBuffer>255 || toBuffer<0){
       printk(KERN_ERR "Input exceeds max value of 0xFF!");
@@ -198,12 +198,12 @@ ssize_t fifo_write(struct file *pfile, const char __user *buffer, size_t length,
 
     if(pos < 16){
       fifo_buffer[pos] = toBuffer;
-      pos++;                                                                                              //pos zapravo oznacava broj elemenata i poziciju poslednjeg
+      pos++;                                                                                              // pos zapravo oznacava broj elemenata i poziciju poslednjeg
       printk(KERN_INFO "Wrote %d into fifo", toBuffer);
     }
     up(&sem);                                                                                             // Dizemo semafor pre eventualnog break-a
     if (inputCopy[4] == '\0') break;                                                                      // Zaustavi parsing u zavisnosti da li je bilo vise vrednosti
-    if (strsep(&inputCopy, ";") == NULL) break;                                                           //Delimo string delimiterom ;, ako ga nema u sledecem ciklusu se zaustavi(zbog poslednjeg broja)
+    if (strsep(&inputCopy, ";") == NULL) break;                                                           // Delimo string delimiterom ;, ako ga nema u sledecem ciklusu se zaustavi(zbog poslednjeg broja)
 
   }
 
