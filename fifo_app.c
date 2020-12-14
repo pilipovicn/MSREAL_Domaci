@@ -32,21 +32,22 @@ int main(){
           if((strncmp(input, "0x", 2) != 0) && (strncmp(input, "Q", 2) != 0)){
             printf("Neispravan format, ocekuje se heksadecimalan!\n");
           }else if(strncmp(input, "Q", 2) == 0){
-            ;;
+            buffer[len+prev_len]=0;
           }else{
             num = (int)strtol(input, NULL, 0);
             if( num<0 || num>255){
               printf("Ocekuje se broj izmedju 0 i 255!\n");
             }else{
               prev_len = strlen(buffer);
-              len = snprintf(buffer+prev_len, 82, "%#04x;", num);                   // Koristi se prev_len zbog fwrite ispod
+              len = snprintf(buffer+prev_len, 82, "%#04x;", num);                   // Koristi se prev_len zbog fwrite ispod (ispravka, zbog null terminatora iznad)
             }
           }
         }while(strcmp(input, "Q") != 0);
         printf("Niz za upis: %s\n", buffer);
 
         fifo = fopen("/dev/fifo", "w");
-        fwrite(buffer, 1, prev_len+len, fifo);
+        fprintf(fifo,"%s",buffer);
+        //fwrite(buffer, 1, prev_len+len, fifo);
         fflush(fifo);
         fclose(fifo);
 
