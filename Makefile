@@ -3,7 +3,8 @@ ifneq ($(KERNELRELEASE),)
 else
 all:
 	$(MAKE) -C /lib/modules/`uname -r`/build M=`pwd` modules
+	gcc fifo_app.c -o fifo_app.out
 clean:
 	$(MAKE) -C /lib/modules/`uname -r`/build M=`pwd` clean
-	rm -f *~
+	rm -f *~ *.out
 endif

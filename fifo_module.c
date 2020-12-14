@@ -8,6 +8,8 @@
 #include <linux/wait.h>
 
 MODULE_LICENSE("Dual BSD/GPL");
+MODULE_AUTHOR("pilipovicn");
+MODULE_DESCRIPTION("Fifo buffer");
 
 struct semaphore sem;
 
@@ -101,11 +103,11 @@ ssize_t fifo_read(struct file *pfile, char __user *buffer, size_t length, loff_t
   int i;
   int j;
   output[0] = '\0';
-  //secondPass = !secondPass;                                                                           // Kako  sistem ocekuje povratnu vrednost u vidu broja bajtova za ispisati
+  secondPass = !secondPass;                                                                             // Kako  sistem ocekuje povratnu vrednost u vidu broja bajtova za ispisati
                                                                                                         // Ispis ne radi za return 0, tako da ovime dozvoljavamo prvi ispis, ali na drugi
                                                                                                         // zahtev od cat vracamo 0
-                                                                                                        // Ovo ima smisla staviti unutar kriticne sekcije, u slucaju vise simultanih cat-ova, pa je to ispod i uradjeno
-  //if (secondPass == 1) return 0;
+                                                                                                        // Ovo bi mozda imalo smisla staviti u kriticnu sekciju pod kontrolu semafora?
+  if (secondPass == 1) return 0;
 
   if(down_interruptible(&sem))                                                                          // spusatmo semafor zbog provere pos
     return -ERESTARTSYS;
@@ -117,8 +119,7 @@ ssize_t fifo_read(struct file *pfile, char __user *buffer, size_t length, loff_t
     if(down_interruptible(&sem))                                                                        // kada se dobije novi elemenat, spustamo semafor i nastavljamo dalje, ako ne,
       return -ERESTARTSYS;                                                                              // oznaci kao task_interruptible i cekaj a) svoj red na semafor, b) ispunjen uslov pos>=batch
   }
-  secondPass = !secondPass;                                                                             // Objasnjeno iznad
-  if (secondPass == 1) return 0;
+
 
   if(pos > (batch-1)){
 

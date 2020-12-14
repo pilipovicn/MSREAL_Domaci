@@ -5,9 +5,9 @@
 
 int main(){
   FILE *fifo;
-  char buffer[82];
-  buffer[0] = '\0';
+  char buffer[90];
   char input[5];
+  char garbage[1];
   int num;
   int len, prev_len;
   int choice;
@@ -22,6 +22,7 @@ int main(){
     input[0] = 0;
     len = 0;
     prev_len = 0;
+    buffer[0] = '\0';
 
     switch (choice) {
     case 1: {
@@ -31,14 +32,14 @@ int main(){
           if((strncmp(input, "0x", 2) != 0) && (strncmp(input, "Q", 2) != 0)){
             printf("Neispravan format, ocekuje se heksadecimalan!\n");
           }else if(strncmp(input, "Q", 2) == 0){
-            //buffer[prev_len+len-1] = '\0';
+            ;;
           }else{
             num = (int)strtol(input, NULL, 0);
             if( num<0 || num>255){
               printf("Ocekuje se broj izmedju 0 i 255!\n");
             }else{
               prev_len = strlen(buffer);
-              len = snprintf(buffer+prev_len, 82, "%#04x;", num);
+              len = snprintf(buffer+prev_len, 82, "%#04x;", num);                   // Koristi se prev_len zbog fwrite ispod
             }
           }
         }while(strcmp(input, "Q") != 0);
@@ -46,19 +47,27 @@ int main(){
 
         fifo = fopen("/dev/fifo", "w");
         fwrite(buffer, 1, prev_len+len, fifo);
-        //fputs(buffer, fifo);
         fflush(fifo);
         fclose(fifo);
 
-        //system(echo "")
         printf("Vrednosti upisane!\n\n");
-
 
         break;
     }
     case 2: {
         printf("Koliko brojeva zelite procitati iz fifo-a?\n");
         scanf("%d", &num);
+        len = sprintf(buffer, "num=%d", num);
+        fifo = fopen("/dev/fifo", "w");
+        fwrite(buffer, 1, len+1, fifo);
+        fflush(fifo);
+        fclose(fifo);
+        fifo = fopen("/dev/fifo", "r");
+        fgets(buffer, 5*num, fifo);
+        fgets(garbage, 5*num, fifo);                                                //emulira drugi poziv cat komande koji je resen sa secondPass
+        fclose(fifo);
+        buffer[5*num] = 0;
+        printf("%s\n", buffer);
         break;
     }
     case 3: {
@@ -69,9 +78,6 @@ int main(){
     default:
         printf("Nepoznata komanda!\n");
     }
-
   }
-
-  fclose(fifo);
   return 0;
 }
