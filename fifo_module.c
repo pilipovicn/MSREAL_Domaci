@@ -6,6 +6,7 @@
 #include <linux/errno.h>
 #include <linux/device.h>
 #include <linux/wait.h>
+#include <linux/slab.h>
 
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_AUTHOR("pilipovicn");
@@ -144,7 +145,7 @@ ssize_t fifo_read(struct file *pfile, char __user *buffer, size_t length, loff_t
 }
 
 ssize_t fifo_write(struct file *pfile, const char __user *buffer, size_t length, loff_t *offset){
-  char input[80];                                                                                        // max 16 vrednosti u fifo-u, dakle 80 karaktera u formatu: 0x01;0x02;0x03 ...
+  char *input = (char *)kmalloc(length, GFP_KERNEL);                                                              // max 16 vrednosti u fifo-u, dakle 80 karaktera u formatu: 0x01;0x02;0x03 ...
   char *inputCopy;
   char trimmed[5];
   int toBuffer;
