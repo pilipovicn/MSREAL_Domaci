@@ -1,4 +1,4 @@
-# Domaci iz MSREAL - Simulacija fifo modula u kernelskoj memoriji
+# Domaci iz MSREAL - Simulacija fifo bafera u kernelskoj memoriji
   Zadatak [nalaze](http://www.elektronika.ftn.uns.ac.rs/mikroracunarski-sistemi-za-rad-u-realnom-vremenu/wp-content/uploads/sites/99/2018/03/Doma%C4%87i-zadatak.pdf) da se napravi pamcenje od maksimum 16 integer vrednosti u fifo stilu memorije. Potrebno je omoguciti suspendovanje procesa pri punom ili praznom baferu, ispis, citanje, kao i citanje vise od jednog elementa odjednom. Omoguciti sigurnu operaciju na SMP sistemima koriscenjem semafora. Napisati kratku aplikaciju koja koristi dati kernel modul i upisuje/ispisuje iz char uredjaja.
 ## Upis u fifo
   Upis je realizovan na nacin da se prima kompletan string hex brojeva odvojen sa ";" a potom se u petlji funkcijom [strsep](https://www.kernel.org/doc/htmldocs/kernel-api/API-strsep.html) svakom iteracijom odvaja po jedan broj iz niza i pretvara u integer i u istom trenutku upise u bafer. Ukoliko nema dovoljno mesta za celi niz brojeva, upisuju se oni za koje ima mesta, a proces se suspenduje kada se bafer napuni.
