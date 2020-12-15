@@ -73,7 +73,7 @@ int main(){
     }
     case 3: {
         printf("Kraj.\n");
-        fclose(fifo);
+        //fclose(fifo); -- Ostalo od prethodne verzije, izazivalo sigsegv na kraju
         return 0;
     }
     default:
