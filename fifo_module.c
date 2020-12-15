@@ -210,7 +210,7 @@ ssize_t fifo_write(struct file *pfile, const char __user *buffer, size_t length,
 
 
   wake_up_interruptible(&readQueue);                                                                      // Budimo eventualne procese za citanje, fifo vise nije prazan
-	kfree(input);
+	kfree(input); //
 	return length;
 }
 
